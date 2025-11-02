@@ -1,7 +1,11 @@
+variable "project_id" {
+  description = ""
+  type        = string
+}
+
 variable "project_name" {
   description = ""
   type        = string
-  default     = "levelUP"
 }
 
 variable "region" {
@@ -12,11 +16,9 @@ variable "region" {
 variable "env" {
   description = ""
   type        = string
-  default     = "dev"
 }
 
 variable "cidr_block" {
   description = ""
   type        = string
-  default     = "10.0.0.0/28"
 }

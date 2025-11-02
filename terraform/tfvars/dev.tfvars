@@ -1,0 +1,5 @@
+project_id   = "terraformgroup4"
+project_name = "levelup"
+region       = "us-central1"
+env          = "dev"
+cidr_block   = "10.0.0.0/28"
