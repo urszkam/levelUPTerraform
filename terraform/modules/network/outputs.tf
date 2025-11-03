@@ -1,15 +1,20 @@
 
 output "subnet_self_link" {
-  description = "Self-link of the created subnet"
+  description = ""
   value       = google_compute_subnetwork.subnet.self_link
 }
 
 output "router_name" {
-  description = "Name of the Cloud Router used by NAT"
+  description = ""
   value       = google_compute_router.router.name
 }
 
 output "nat_name" {
-  description = "Name of the Cloud NAT configuration"
+  description = ""
   value       = google_compute_router_nat.nat.name
+}
+
+output "vpc_name" {
+  description = ""
+  value       = google_compute_network.vpc.name
 }
