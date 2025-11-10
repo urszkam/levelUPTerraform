@@ -1,19 +1,9 @@
-output "subnet_self_link" {
+output "vm_internal_ip" {
   description = ""
-  value       = module.network.subnet_self_link
+  value       = module.vm.vm_internal_ip
 }
 
-output "router_name" {
-  description = "T"
-  value       = module.network.router_name
-}
-
-output "nat_name" {
+output "service_account_email" {
   description = ""
-  value       = module.network.nat_name
-}
-
-output "vpc_name" {
-  description = ""
-  value       = module.network.vpc_name
+  value       = module.iam.service_account_email
 }
