@@ -1,1 +1,12 @@
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        echo "Cloud Build works correctly!"
+        echo "Repo: $REPO_NAME"
+        echo "Commit: $COMMIT_SHA"
 
+options:
+  logging: CLOUD_LOGGING_ONLY
