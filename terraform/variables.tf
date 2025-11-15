@@ -22,3 +22,8 @@ variable "cidr_block" {
   description = ""
   type        = string
 }
+
+variable "notification_email" {
+  description = ""
+  type        = string
+}
