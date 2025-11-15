@@ -3,12 +3,17 @@ variable "project_id" {
   type        = string
 }
 
-variable "vm_sa_name" {
+variable "env" {
   description = ""
   type        = string
 }
 
-variable "monitoring_sa_name" {
+variable "instance_id" {
+  description = ""
+  type        = string
+}
+
+variable "notification_email" {
   description = ""
   type        = string
 }

@@ -27,7 +27,17 @@ resource "google_compute_instance" "vm" {
   metadata = {
     enable-oslogin  = "TRUE"
     enable-osconfig = "TRUE"
-    startup-script  = "echo 'Hello from ${var.env}' > /var/tmp/env.txt"
+  }
+
+  metadata_startup_script = templatefile("${path.module}/startup.sh.tftpl", {
+    env        = var.env
+    project_id = var.project_id
+  })
+
+  labels = {
+    env     = var.env
+    project = var.project_id
+    role    = "app-vm"
   }
 
   tags = [var.env, "vm"]
