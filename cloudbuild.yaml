@@ -1,12 +1,57 @@
 steps:
-  - name: gcr.io/cloud-builders/gcloud
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        echo "Cloud Build works correctly!"
-        echo "Repo: $REPO_NAME"
-        echo "Commit: $COMMIT_SHA"
+    - name: hashicorp/terraform:1.13.0
+      id: terraform-fmt
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform fmt -recursive | tee /workspace/terraform-fmt.log
+      dir: "terraform"
+
+    - name: hashicorp/terraform:1.13.0
+      id: "terraform-init"
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform init -input=false \
+              | tee /workspace/terraform-init.log
+      dir: "terraform"
+
+    - name: hashicorp/terraform:1.13.0
+      id: terraform-validate
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform validate | tee /workspace/terraform-validate.log
+      dir: "terraform"
+
+    - name: gcr.io/cloud-builders/gsutil
+      id: "download-tfplan"
+      entrypoint: bash
+      args:
+          - -c
+          - |
+              gsutil cp gs://levelup-group4-terraform-state/plans/default.tfplan terraform/tfplan
+
+    - name: hashicorp/terraform:1.13.0
+      id: "terraform-apply"
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform apply -input=false -auto-approve tfplan \
+              | tee /workspace/terraform-apply.log
+      dir: "terraform"
+
+    - name: gcr.io/cloud-builders/gsutil
+      id: "cleanup-tfplan"
+      entrypoint: bash
+      args:
+          - -c
+          - |
+              gsutil rm -f gs://levelup-group4-terraform-state/plans/default.tfplan
 
 options:
   logging: CLOUD_LOGGING_ONLY
