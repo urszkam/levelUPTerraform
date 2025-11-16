@@ -13,12 +13,25 @@ A complete landing zone for the LevelUP initiative on Google Cloud Platform. The
 
 ## Business Context
 
-The project solves fast, repeatable GCP environment provisioning for LevelUP teams. Every team receives:
+This project aims to deploy Google Cloud Platform (GCP) infrastructure in a fully automated way using Terraform and Cloud Build. The goal is to establish a repeatable, version-controlled Infrastructure as Code (IaC) workflow that ensures consistency and efficiency across environments.
 
--   consistent resource naming (`levelup-<env>-*`),
--   full infrastructure version control,
--   proven CI/CD integration,
--   built-in observability and security (flow logs, Ops Agent, alerting).
+The project scope includes:
+
+-   Configuring Terraform files for VPC, virtual machines, firewall rules, and IAM policies.
+-   Using Cloud Storage as the backend for managing Terraform state.
+-   Integrating Terraform with Cloud Build to automatically trigger `terraform plan` and `terraform apply` through CI/CD pipelines.
+-   Enabling monitoring, logging, and alerting in Cloud Monitoring for infrastructure observability.
+
+Technologies used: Terraform, Cloud Build, Compute Engine, Cloud Storage, IAM, and Cloud Monitoring.
+
+Team responsibilities:
+
+1. Develop Terraform modules for networking, VM instances, and IAM configuration.
+2. Integrate the Git repository with Cloud Build for automated deployment.
+3. Execute automated deployments and verify rollback procedures.
+4. Analyze automation time and cost efficiency.
+
+The final outcome is a fully automated GCP infrastructure deployment, reproducible from version-controlled source code.
 
 ## Architecture
 
@@ -63,41 +76,32 @@ Terraform state → GCS bucket levelup-group4-terraform-state (prefix dev)
 
 ## Delivery Highlights
 
-### Network
+### 🌐 Network
 
--   Custom VPC `levelup-dev-vpc` (`10.0.0.0/28`) with fully managed subnets/firewalls from code.
--   Subnet in `us-central1` exposes Private Google Access, keeping the VM private while reaching Google APIs.
--   Firewalls:
-    -   `*-allow-internal` for intra-subnet communication (TCP/UDP).
-    -   `*-allow-ssh-icmp` for controlled admin access; logging enabled.
--   Cloud Router + Cloud NAT provide egress, with `router_nat.log_config` capturing only errors to balance visibility and cost.
--   (Optional) Insert a topology screenshot here to illustrate the VPC, subnet, firewall rules, and Cloud NAT nodes in the GCP Network Topology view.
+-   Custom VPC `levelup-dev-vpc` (`10.0.0.0/28`) is created with `auto_create_subnetworks = false`, so every subnet or route is expressed in Terraform rather than inherited from Google’s default network; /28 gives 13 usable addresses, enough for a single VM plus future helpers without wasting IP space.
+-   The single subnet (`levelup-dev-subnet`) lives in `us-central1`, takes advantage of its four zones (for resilience) and lower-cost e2 pricing, turns on Private Google Access, and pushes flow logs with 30% sampling + full metadata—enough for troubleshooting without flooding logs.
+-   Firewall rules are limited to two cases: internal TCP/UDP within the CIDR and SSH/ICMP from anywhere for administrators. Both rules keep `log_config` enabled so access attempts show up in Cloud Logging.
+-   A Cloud Router + Cloud NAT pair provides outbound internet for the subnet. NAT logging is set to `ERRORS_ONLY`, which proves translations work while keeping log volume (and cost) under control.
 
-### Compute
+### 🖥️ Compute
 
--   `levelup-dev-vm` auto-selects the first available zone (via `google_compute_zones` data source).
--   Startup script:
-    -   writes `/etc/profile.d/env.sh` metadata,
-    -   installs Nginx and serves a status page showing ENV and project,
-    -   installs and restarts Google Ops Agent for instant metrics.
--   Labels `env`, `project`, `role` simplify filtering in Logging/Monitoring.
--   (Optional) Embed a VM detail or startup page screenshot here to show the Debian VM metadata, labels, and the Nginx status page rendered by the bootstrap script.
+-   `levelup-dev-vm` is a single `e2-small` Compute Engine VM running the Debian 12 image with a 20 GB boot disk. That size is the smallest that comfortably runs Ops Agent plus the demo workload.
+-   Terraform queries `google_compute_zones` and picks the first zone in `us-central1`, so builds continue even if a specific zone is unavailable.
+-   OS Login/OS Config metadata is enabled, the VM attaches the dedicated service account with full Cloud Platform scope, and startup automation writes env metadata, installs Nginx, and runs Google Ops Agent.
+-   The instance carries consistent labels (`env`, `project`, `role=app-vm`) and tags (`dev`, `vm`) so firewall rules, IAM conditions, and monitoring filters line up with the rest of the stack.
 
 ### IAM
 
--   Workload SA (`levelup-dev-vm-sa`) owns logging/metrics write permissions and API access scope.
--   Monitoring SA (`levelup-dev-monit-sa`) keeps read-only monitoring/logging roles for downstream automation.
+-   Workload Service Account (`levelup-dev-vm-sa`) owns logging/metrics write permissions and API access scope (`Logs Writer`, `Monitoring Metric Writer`).
+-   Monitoring Service Account (`levelup-dev-monit-sa`) keeps read-only monitoring/logging roles for downstream automation (`Logs Viewer`, `Monitoring Viewer`)
 -   Outputs expose the SA emails for other modules or external tooling.
 
-### Monitoring & Alerts
+### 📟 Monitoring & Alerts
 
--   Email channel (default `ursz.kam@gmail.com`) is embedded, so alerts already reach a validated address.
--   Policies:
-    -   CPU >80% for 5 minutes (60s align, mean).
-    -   Disk >90% for 5 minutes (`agent.googleapis.com/disk/percent_used`, `state=used`).
--   Rich markdown documentation helps operators triage.
--   Each alert event carries `env=dev` and `severity=warning/high`, enabling dashboards and filters.
--   (Optional) Add a Cloud Monitoring screenshot here to demonstrate the alert policies and notification channel configuration.
+-   A single email notification channel (`Email alerts dev`) sends incidents to `ursz.kam@gmail.com`, so no extra wiring is needed after deploy.
+-   Two alert policies ship with the stack: CPU utilization above 80 % for 5 minutes and disk usage above 90 % (Ops Agent metric `disk/percent_used` with `state=used`) for the VM instance ID.
+-   Both policies include short markdown docs that name the VM and condition, so responders know what failed straight from the email.
+-   Labels `env=dev` plus `severity=warning`/`high` accompany each alert, which keeps dashboards and filters consistent with the rest of the configuration.
 
 ### CI/CD
 
