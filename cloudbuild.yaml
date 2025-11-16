@@ -28,13 +28,27 @@ steps:
               terraform validate | tee /workspace/terraform-validate.log
       dir: "terraform"
 
+    - name: gcr.io/cloud-builders/git
+      id: "detect-pr-number"
+      entrypoint: bash
+      args:
+          - -c
+          - |
+              PR_NUMBER=$(git log -1 --pretty=%s | sed -n 's/.*#\([0-9]\+\).*/\1/p')
+              if [ -z "${PR_NUMBER}" ]; then
+                  echo "Unable to detect PR number for commit ${COMMIT_SHA}" >&2
+                  exit 1
+              fi
+              echo -n "${PR_NUMBER}" > /workspace/pr-number.txt
+
     - name: gcr.io/cloud-builders/gsutil
       id: "download-tfplan"
+      entrypoint: bash
       args:
-          - cp
-          - gs://levelup-group4-terraform-state/plans/${SHORT_SHA}.tfplan
-          - tfplan
-      dir: "terraform"
+          - -c
+          - |
+              PR_NUMBER=$(cat /workspace/pr-number.txt)
+              gsutil cp gs://levelup-group4-terraform-state/plans/pr-${PR_NUMBER}.tfplan terraform/tfplan
 
     - name: hashicorp/terraform:1.13.0
       id: "terraform-apply"
@@ -48,11 +62,12 @@ steps:
 
     - name: gcr.io/cloud-builders/gsutil
       id: "cleanup-tfplan"
+      entrypoint: bash
       args:
-          - rm
-          - -f
-          - gs://levelup-group4-terraform-state/plans/${SHORT_SHA}.tfplan
-      dir: "terraform"
+          - -c
+          - |
+              PR_NUMBER=$(cat /workspace/pr-number.txt)
+              gsutil rm -f gs://levelup-group4-terraform-state/plans/pr-${PR_NUMBER}.tfplan
 
 options:
     logging: CLOUD_LOGGING_ONLY

@@ -42,10 +42,15 @@ steps:
 
     - name: gcr.io/cloud-builders/gsutil
       id: "upload-tfplan"
+      entrypoint: bash
       args:
-          - cp
-          - tfplan
-          - gs://levelup-group4-terraform-state/plans/${SHORT_SHA}.tfplan
+          - -c
+          - |
+              if [ -z "${PR_NUMBER}" ]; then
+                  echo "PR_NUMBER is not available. Cannot upload plan." >&2
+                  exit 1
+              fi
+              gsutil cp tfplan gs://levelup-group4-terraform-state/plans/pr-${PR_NUMBER}.tfplan
       dir: "terraform"
 
 options:
