@@ -54,4 +54,4 @@ steps:
               gsutil rm -f gs://levelup-group4-terraform-state/plans/default.tfplan
 
 options:
-    logging: CLOUD_LOGGING_ONLY
+  logging: CLOUD_LOGGING_ONLY

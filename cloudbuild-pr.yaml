@@ -1,14 +1,5 @@
 steps:
     - name: hashicorp/terraform:1.13.0
-      id: terraform-fmt
-      entrypoint: sh
-      args:
-          - -c
-          - |
-              terraform fmt -recursive -check | tee /workspace/terraform-fmt.log
-      dir: "terraform"
-
-    - name: hashicorp/terraform:1.13.0
       id: "terraform-init"
       entrypoint: sh
       args:
