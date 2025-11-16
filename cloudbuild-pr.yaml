@@ -14,8 +14,7 @@ steps:
       args:
           - -c
           - |
-              terraform init -backend-config=bucket=levelup-group4-terraform-state \
-                -input=false \
+              terraform init -input=false \
               | tee /workspace/terraform-init.log
       dir: "terraform"
 
@@ -46,11 +45,7 @@ steps:
       args:
           - -c
           - |
-              if [ -z "${PR_NUMBER}" ]; then
-                  echo "PR_NUMBER is not available. Cannot upload plan." >&2
-                  exit 1
-              fi
-              gsutil cp tfplan gs://levelup-group4-terraform-state/plans/pr-${PR_NUMBER}.tfplan
+              gsutil cp tfplan gs://levelup-group4-terraform-state/plans/default.tfplan
       dir: "terraform"
 
 options:
