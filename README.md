@@ -13,12 +13,24 @@ A complete landing zone for the LevelUP initiative on Google Cloud Platform. The
 
 ## Business Context
 
-The project solves fast, repeatable GCP environment provisioning for LevelUP teams. Every team receives:
+This project aims to deploy Google Cloud Platform (GCP) infrastructure in a fully automated way using Terraform and Cloud Build. The goal is to establish a repeatable, version-controlled Infrastructure as Code (IaC) workflow that ensures consistency and efficiency across environments.
 
--   consistent resource naming (`levelup-<env>-*`),
--   full infrastructure version control,
--   proven CI/CD integration,
--   built-in observability and security (flow logs, Ops Agent, alerting).
+The project scope includes:
+- Configuring Terraform files for VPC, virtual machines, firewall rules, and IAM policies.
+- Using Cloud Storage as the backend for managing Terraform state.
+- Integrating Terraform with Cloud Build to automatically trigger `terraform plan` and `terraform apply` through CI/CD pipelines.
+- Enabling monitoring, logging, and alerting in Cloud Monitoring for infrastructure observability.
+
+Technologies used: Terraform, Cloud Build, Compute Engine, Cloud Storage, IAM, and Cloud Monitoring.
+
+Team responsibilities:
+1. Develop Terraform modules for networking, VM instances, and IAM configuration.
+2. Integrate the Git repository with Cloud Build for automated deployment.
+3. Execute automated deployments and verify rollback procedures.
+4. Analyze automation time and cost efficiency.
+
+The final outcome is a fully automated GCP infrastructure deployment, reproducible from version-controlled source code.
+
 
 ## Architecture
 
@@ -85,9 +97,10 @@ Terraform state → GCS bucket levelup-group4-terraform-state (prefix dev)
 
 ### IAM
 
--   Workload SA (`levelup-dev-vm-sa`) owns logging/metrics write permissions and API access scope.
--   Monitoring SA (`levelup-dev-monit-sa`) keeps read-only monitoring/logging roles for downstream automation.
--   Outputs expose the SA emails for other modules or external tooling.
+-   Workload Service Account (`levelup-dev-vm-sa`) owns logging/metrics write permissions and API access scope (`Logs Writer`, `Monitoring Metric Writer`).
+-   Monitoring Service Account (`levelup-dev-monit-sa`) keeps read-only monitoring/logging roles for downstream automation (`Logs Viewer`, `Monitoring Viewer`)
+-   Build Service Account (`levelup-dev-cloudbuild-sa`) keeps multiple roles for all necessary applications (`Cloud Build Editor`, `Cloud Build Service Account`, `Cloud Build Service Agent`, `Compute Instance Admin (v1)`, `Compute Network Admin`, `Compute Security Admin`, `Logging Admin`, `Monitoring Admin`, `Security Admin`, `Service Account Admin`, `Service Account User`, `Storage Object Admin`)
+-   Outputs expose the Service Account emails for other modules or external tooling.
 
 ### Monitoring & Alerts
 
@@ -121,7 +134,7 @@ Everything is already populated in-repo, so `terraform init` followed by plan/ap
 Some foundational pieces were created once outside of Terraform and then referenced by the code:
 
 -   **Cloud Storage backend** – bucket `levelup-group4-terraform-state` (prefix `dev`) was created manually in the `terraformgroup4` project with uniform bucket-level access and versioning enabled. The Terraform operator account and the Cloud Build service account were granted `roles/storage.objectAdmin` and `roles/storage.legacyBucketReader` on the bucket so remote state files and locks are centrally stored and protected from accidental deletion.
--   **Cloud Build custom service account** – a dedicated service account (provisioned via the GCP console) executes all Cloud Build triggers. It owns granular roles (`storage.objectAdmin`, `compute.instanceAdmin.v1`, `iam.serviceAccountUser`, `monitoring.admin`, `logging.admin`) which allow it to run Terraform, manipulate the state bucket, and configure Compute/Monitoring resources without elevating to project owner. Each trigger references this service account explicitly, ensuring that plan/apply jobs use the same identity and audit trail both when running locally and through CI.
+-   **Cloud Build custom service account** – a dedicated service account (provisioned via the GCP console) executes all Cloud Build triggers. It owns granular roles (`Cloud Build Editor`, `Cloud Build Service Account`, `Cloud Build Service Agent`, `Compute Instance Admin (v1)`, `Compute Network Admin`, `Compute Security Admin`, `Logging Admin`, `Monitoring Admin`, `Security Admin`, `Service Account Admin`, `Service Account User`, `Storage Object Admin`) which allow it to run Terraform, manipulate the state bucket, and configure Compute/Monitoring resources without elevating to project owner. Each trigger references this service account explicitly, ensuring that plan/apply jobs use the same identity and audit trail both when running locally and through CI.
 
 ## Deployment Flow (local or CI)
 
@@ -193,9 +206,16 @@ Outputs after apply:
 ## Cost & Time
 
 -   Monthly costs:
-    -   `e2-small` ≈ $15 (region-dependent).
-    -   Cloud NAT + logging = a few dollars.
-    -   Cloud Build runtime usually stays within free tier (seconds per pipeline).
+
+| Service description | Service ID     | Cost (zł)  | Other savings (zł) | Subtotal (zł) |
+| ------------------- | -------------- | ---------- | ------------------ | ------------- |
+| VM Manager          | 5E18-9A83-2867 | 0.80       | -0.80              | 0.00          |
+| Cloud Build         | 8B5D-EF7D-EB12 | 0.00       | -0.00              | 0.00          |
+| Cloud Logging       | 5490-F7B7-8DF6 | 0.00       | -0.00              | 0.00          |
+| Networking          | E505-1604-58F8 | 6.44       | -6.44              | 0.00          |
+| Compute Engine      | 6F81-5844-456A | 19.89      | -19.89             | 0.00          |
+
+    
 -   Time to deploy:
     -   `terraform apply` ≈ 2–3 minutes.
     -   CI pipeline (plan + apply) ≈ 5 minutes.
