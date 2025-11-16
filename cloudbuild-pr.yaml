@@ -1,1 +1,52 @@
+steps:
+    - name: hashicorp/terraform:1.13.0
+      id: terraform-fmt
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform fmt -recursive -check | tee /workspace/terraform-fmt.log
+      dir: "terraform"
 
+    - name: hashicorp/terraform:1.13.0
+      id: "terraform-init"
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform init -backend-config=bucket=levelup-group4-terraform-state \
+                -input=false \
+              | tee /workspace/terraform-init.log
+      dir: "terraform"
+
+    - name: hashicorp/terraform:1.13.0
+      id: terraform-validate
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform validate | tee /workspace/terraform-validate.log
+      dir: "terraform"
+
+    - name: hashicorp/terraform:1.13.0
+      id: "terraform-plan"
+      entrypoint: sh
+      args:
+          - -c
+          - |
+              terraform plan \
+                -var-file=tfvars/dev.tfvars \
+                -out=tfplan \
+                -input=false | tee /workspace/terraform-plan.log
+      dir: "terraform"
+
+    - name: gcr.io/cloud-builders/gsutil
+      id: "upload-tfplan"
+      args:
+          - cp
+          - tfplan
+          - gs://levelup-group4-terraform-state/plans/${SHORT_SHA}.tfplan
+      dir: "terraform"
+
+options:
+    logging: CLOUD_LOGGING_ONLY
