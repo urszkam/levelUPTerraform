@@ -250,8 +250,7 @@ The result is stored in the terraform-fmt.log.
    ```yaml
    options:
    logging: CLOUD_LOGGING_ONLY
-  ```
-   
+
 
 ### Cloud Build (PR)
 
