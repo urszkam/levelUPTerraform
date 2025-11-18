@@ -11,6 +11,8 @@ A complete landing zone for the LevelUP initiative on Google Cloud Platform. The
 -   **Evidence**: generated IP, service-account emails, instance ID, and Cloud Build / Cloud Logging traces confirm each rollout end-to-end.
 -   **Out-of-band setup**: the remote Cloud Storage backend and Cloud Build trigger with a custom service account were prepared manually and wired into this Terraform stack.
 
+We deliberately follow IaC best practices: every resource is codified in reusable Terraform modules committed to Git; state and lock files reside in a versioned GCS backend to prevent drift. Cloud Build pipelines enforce `fmt`, `validate`, `plan`, and `apply` steps on every PR and push; branch protection rules mandate peer review before merging to `main`. Automation runs under dedicated least-privilege service accounts. On top of that, naming/tagging conventions, logging/monitoring defaults, and exported outputs are consistent across modules so the resulting environments remain auditable and easy to operate.
+
 ## Business Context
 
 This project aims to deploy Google Cloud Platform (GCP) infrastructure in a fully automated way using Terraform and Cloud Build. The goal is to establish a repeatable, version-controlled Infrastructure as Code (IaC) workflow that ensures consistency and efficiency across environments.
