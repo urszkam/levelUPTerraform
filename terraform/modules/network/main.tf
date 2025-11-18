@@ -37,7 +37,7 @@ resource "google_compute_firewall" "allow-internal" {
   }
 
   source_ranges = [var.cidr_block]
-  description   = ""
+  description   = "name of source ranges"
 
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
@@ -58,7 +58,7 @@ resource "google_compute_firewall" "allow-ssh-icmp" {
   }
 
   source_ranges = ["0.0.0.0/0"]
-  description   = ""
+  description   = "name of source ranges"
 
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
