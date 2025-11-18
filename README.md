@@ -1,17 +1,17 @@
-# LevelUP Terraform – Automated GCP Deployment
+# ☁️ LevelUP Terraform – Automated GCP Deployment
 
 A complete landing zone for the LevelUP initiative on Google Cloud Platform. The repository packages reusable Terraform modules, a remote Cloud Storage backend, and Cloud Build integration so the entire stack (network, VM, IAM, monitoring) is reproducible and deployed from code.
 
+We deliberately follow IaC best practices: every resource is codified in reusable Terraform modules committed to Git; state and lock files reside in a versioned GCS backend to prevent drift. Cloud Build pipelines enforce `fmt`, `validate`, `plan`, and `apply` steps on every PR and push; branch protection rules mandate peer review before merging to `main`. Automation runs under dedicated least-privilege service accounts. Naming/tagging conventions, logging/monitoring defaults, plus exported outputs are consistent across modules so the resulting environments stay auditable and easy to operate.
+
 ## TL;DR
 
--   **Environment**: project `terraformgroup4`, region `us-central1`, environment `dev`.
--   **Terraform state**: bucket `levelup-group4-terraform-state` with prefix `dev`.
--   **Modules**: VPC with NAT and logging, Debian 12 e2-small VM with Ops Agent, dedicated service accounts, CPU/disk alerts plus email channel.
--   **Automation**: run `terraform apply -var-file=tfvars/dev.tfvars` locally or trigger Cloud Build (repo → plan/apply).
--   **Evidence**: generated IP, service-account emails, instance ID, and Cloud Build / Cloud Logging traces confirm each rollout end-to-end.
--   **Out-of-band setup**: the remote Cloud Storage backend and Cloud Build trigger with a custom service account were prepared manually and wired into this Terraform stack.
-
-We deliberately follow IaC best practices: every resource is codified in reusable Terraform modules committed to Git; state and lock files reside in a versioned GCS backend to prevent drift. Cloud Build pipelines enforce `fmt`, `validate`, `plan`, and `apply` steps on every PR and push; branch protection rules mandate peer review before merging to `main`. Automation runs under dedicated least-privilege service accounts. On top of that, naming/tagging conventions, logging/monitoring defaults, and exported outputs are consistent across modules so the resulting environments remain auditable and easy to operate.
+-   **Scope**: one dev landing zone in project `terraformgroup4` (region `us-central1`) covering VPC, VM, IAM, monitoring/alerting, and automation glue.
+-   **State & locking**: remote backend lives in `gs://levelup-group4-terraform-state/prefix=dev`, so local runs and Cloud Build share the exact history/locks.
+-   **Modules**: custom VPC with NAT + flow logs, Debian 12 e2-small VM with startup script/Ops Agent, two dedicated service accounts, and notification policies with email channel.
+-   **Pipelines**: Cloud Build PR trigger runs `fmt`/`validate`/`plan` and stores the signed `tfplan`; the main trigger picks up merges and applies the stored plan automatically.
+-   **Operations**: local operators can still run `terraform apply -var-file=tfvars/dev.tfvars`, but rollout/rollback is expected to go through the pipelines for auditability.
+-   **Evidence**: Terraform outputs (IP, SA emails, instance ID) plus Cloud Build + Cloud Logging traces document every deployment; backend and triggers were bootstrapped manually once.
 
 ## Business Context
 
@@ -37,44 +37,33 @@ The final outcome is a fully automated GCP infrastructure deployment, reproducib
 
 ## Architecture
 
+Terraform provisions a minimal yet production-ready stack: a custom VPC with Cloud NAT and flow logs, a hardened Debian VM joined via dedicated service accounts, and monitoring policies that feed an email channel. All of it is orchestrated through Cloud Build pipelines and backed by a shared GCS state bucket so rollouts and rollbacks stay consistent.
+
 ```
-GitHub repo
+GitHub (main + PR branches)
    │
-   ├─ Cloud Build (cloudbuild.yaml / cloudbuild-pr.yaml)
-   │     └─ Terraform container
-   │           ├─ init (GCS backend)
-   │           ├─ fmt / validate / plan
-   │           └─ apply or rollback
+   ├─ Cloud Build triggers
+   │     ├─ PR: fmt → validate → plan → upload tfplan
+   │     └─ Main: fmt → validate → download tfplan → apply → cleanup
    │
-Terraform state → GCS bucket levelup-group4-terraform-state (prefix dev)
+Terraform backend (gs://levelup-group4-terraform-state/dev)
    │
-   ├─ module.network    → VPC levelup-dev-vpc + subnet + firewalls + Cloud NAT + flow logs
-   ├─ module.iam        → SAs: workload (`levelup-dev-vm-sa`) & monitoring (`levelup-dev-monit-sa`)
-   ├─ module.vm         → Compute Engine `levelup-dev-vm`, Nginx + Ops Agent, env/project metadata
-   └─ module.monitoring → email channel + CPU/Disk alerts bound to concrete instance_id
+   ├─ module.network → VPC + subnet + firewalls + Cloud NAT + flow logs
+   ├─ module.iam     → workload & monitoring service accounts + IAM bindings
+   ├─ module.vm      → Compute Engine VM with startup script, Ops Agent, labels
+   └─ module.monitoring → email channel + CPU/disk alert policies referencing VM
 ```
 
-(Optional) Insert an infrastructure diagram right after this architecture block to visualize how GitHub, Cloud Build, Terraform, and the GCP resources interact end-to-end.
+(Optional) DIAGRAM INFRASTRUKTURY
 
 ### Module Details
 
-| Module               | Resources                                                         | Highlights                                                                                             |
-| -------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `modules/network`    | `google_compute_network`, subnetwork, two firewalls, router + NAT | Custom VPC 10.0.0.0/28, Private Google Access, flow + firewall logs, minimal SSH/ICMP exposure         |
-| `modules/iam`        | 2× `google_service_account`, `google_project_iam_member` bindings | Workload SA (logWriter, metricWriter) and monitoring SA (monitoring/logging viewer) exported for reuse |
-| `modules/vm`         | `google_compute_instance`, startup template                       | Debian 12 `e2-small`, automatic Nginx page, Ops Agent install, labels `env/project/role`               |
-| `modules/monitoring` | notification channel + two alert policies                         | Email channel, CPU>80% and disk>90% rules, markdown documentation, severity labels                     |
-
-### Data Flow
-
-1. Git repository provides the declarative config.
-2. Terraform stores state in GCS, enabling team-wide locking and history.
-3. Cloud Build (or local operator) runs plan/apply.
-4. Provisioning yields:
-    - network and VM with traffic logging,
-    - scoped service accounts,
-    - active monitoring with alerts,
-    - outputs (IP, SAs, instance ID) referenced in documentation and validation notes.
+| Module                  | Resources                                                         | Highlights                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modules/network`       | `google_compute_network`, subnetwork, two firewalls, router + NAT | VPC `10.0.0.0/28` with Private Google Access, flow/firewall logging, SSH/ICMP admin rule, Cloud Router + NAT (errors-only logging)          |
+| `modules/iam`           | 2× `google_service_account`, `google_project_iam_member` bindings | Workload SA with `roles/logging.logWriter` + `roles/monitoring.metricWriter`, monitoring SA with viewer roles; both exported as outputs     |
+| `modules/vm`            | `google_compute_instance`, startup template                       | Debian 12 `e2-small`, OS Login/OS Config metadata, attaches workload SA, startup template installs Nginx + Ops Agent and stamps labels/tags |
+| `modules/monitoring` 📟 | notification channel + two alert policies                         | Email channel (`ursz.kam@gmail.com`), CPU>80 % & disk>90 % alerts keyed to VM `instance_id`, markdown docs + severity labels                |
 
 ## Delivery Highlights
 
@@ -92,7 +81,7 @@ Terraform state → GCS bucket levelup-group4-terraform-state (prefix dev)
 -   OS Login/OS Config metadata is enabled, the VM attaches the dedicated service account with full Cloud Platform scope, and startup automation writes env metadata, installs Nginx, and runs Google Ops Agent.
 -   The instance carries consistent labels (`env`, `project`, `role=app-vm`) and tags (`dev`, `vm`) so firewall rules, IAM conditions, and monitoring filters line up with the rest of the stack.
 
-### IAM
+### 🔐 IAM
 
 -   Workload Service Account (`levelup-dev-vm-sa`) owns logging/metrics write permissions and API access scope (`Logs Writer`, `Monitoring Metric Writer`).
 -   Monitoring Service Account (`levelup-dev-monit-sa`) keeps read-only monitoring/logging roles for downstream automation (`Logs Viewer`, `Monitoring Viewer`)
@@ -104,6 +93,7 @@ Terraform state → GCS bucket levelup-group4-terraform-state (prefix dev)
 -   Two alert policies ship with the stack: CPU utilization above 80 % for 5 minutes and disk usage above 90 % (Ops Agent metric `disk/percent_used` with `state=used`) for the VM instance ID.
 -   Both policies include short markdown docs that name the VM and condition, so responders know what failed straight from the email.
 -   Labels `env=dev` plus `severity=warning`/`high` accompany each alert, which keeps dashboards and filters consistent with the rest of the configuration.
+    Ops Agent streams metrics/logs to Cloud Monitoring/Logging, alerts stick to the VM `instance_id`, and the existing email channel can be expanded with extra `google_monitoring_notification_channel` resources (Slack/webhook/SMS) if we need more destinations.
 
 ### CI/CD
 
@@ -112,49 +102,29 @@ Terraform state → GCS bucket levelup-group4-terraform-state (prefix dev)
 -   Shared GCS backend ensures both local and CI runs use the same state.
 -   (Optional) Place a Cloud Build run screenshot near this section to highlight the custom service-account trigger and Terraform steps in the build log.
 
-## Out-of-band Components
+## Out-of-band Components (Prerequisites)
 
 Some foundational pieces were created once outside of Terraform and then referenced by the code:
 
 -   **Cloud Storage backend** – bucket `levelup-group4-terraform-state` (prefix `dev`) was created manually in the `terraformgroup4` project with uniform bucket-level access and versioning enabled. The Terraform operator account and the Cloud Build service account were granted `roles/storage.objectAdmin` and `roles/storage.legacyBucketReader` on the bucket so remote state files and locks are centrally stored and protected from accidental deletion.
 -   **Cloud Build custom service account** – a dedicated service account (provisioned via the GCP console) executes all Cloud Build triggers. It owns granular roles (`Cloud Build Editor`, `Cloud Build Service Account`, `Cloud Build Service Agent`, `Compute Instance Admin (v1)`, `Compute Network Admin`, `Compute Security Admin`, `Logging Admin`, `Monitoring Admin`, `Security Admin`, `Service Account Admin`, `Service Account User`, `Storage Object Admin`) which allow it to run Terraform, manipulate the state bucket, and configure Compute/Monitoring resources without elevating to project owner. Each trigger references this service account explicitly, ensuring that plan/apply jobs use the same identity and audit trail both when running locally and through CI.
-
-## Deployment Flow (local or CI)
-
-```bash
-cd terraform
-terraform init
-terraform plan  -var-file=tfvars/dev.tfvars
-terraform apply -var-file=tfvars/dev.tfvars
-```
-
-Outputs after apply:
-
-| Output                             | Purpose                                                  |
-| ---------------------------------- | -------------------------------------------------------- |
-| `vm_internal_ip`                   | Private VM address for integrations (bastion, LB, etc.). |
-| `vm_service_account_email`         | Workload credential for extra bindings or sinks.         |
-| `monitoring_service_account_email` | Use when wiring alerts to third-party systems.           |
-
-### Rollback & Test Scenario
-
-Rollback always happens through the automated Cloud Build triggers, so pushing a revert or opening a rollback PR is all it takes—pipelines pick up the change, regenerate the plan, and apply it without manual intervention.
-
--   **Flow**:
-    1. Revert or cherry-pick the desired commit into a dedicated rollback branch and open a PR (direct pushes to `main` should be blocked).
-    2. The PR trigger (`cloudbuild-pr.yaml`) runs automatically, producing a deterministic `tfplan` stored in `gs://levelup-group4-terraform-state/plans/default.tfplan`.
-    3. Once the PR is approved and merged into `main`, the main trigger (`cloudbuild.yaml`) fires, downloads that plan, and executes `terraform apply`, which reconciles only the drift.
-    4. Monitor the Cloud Build logs, Terraform outputs, and quick alert/VM checks to confirm the environment matches the expected revision.
--   **Determinism**: shared GCS state makes every rollback predictable—no bespoke scripts needed.
-
-## Operations & Maintenance
-
--   **Observability**: VPC flow and firewall logs stream to Cloud Logging with `env` labels for quick filters.
--   **Security**: external traffic is closed except SSH/ICMP; NAT supplies outbound connectivity without public IP exposure.
--   **Extensibility**: modular layout lets us add components (Cloud SQL, load balancers, Secret Manager) without touching existing resources.
--   **Cost**: e2-small + NAT + logging ≈ low double digits per month; scaling up/down is variable-driven.
+-   **Repository protections** – the GitHub repository has branch protection on `main` (required reviews + passing Cloud Build checks) so every change, including rollbacks, flows through a PR and the automated pipelines before landing.
 
 ## CI/CD Details
+
+### Cloud Build (PR)
+
+The cloudbuild-pr.yaml file defines the Pull Request validation pipeline.
+This pipeline performs non-destructive checks: formatting, validation, and planning.
+Thanks to that the infrastructure changes are correct and can be reviewed before being merged into the main branch.
+
+-   It enables a lightweight pipeline. The trigger also runs as the custom Build service account so it can reuse the shared state bucket without additional credentials.
+    -   `terraform-fmt` with a `-recursive` flag format all the terraform configuration to keep the code clean and uniform.
+    -   `terraform-init` initializes providers and connects to the remote Google Cloud Storage state backend so that PR validation uses the exact same state as the main deployment pipeline.
+    -   `terraform-validate` verifies that the Terraform configuration is correct before generating a plan.
+    -   `terraform-plan` generates an execution plan that shows exactly what Terraform would change. The plan file (`default.tfplan`) is then uploaded to Google Cloud Storage for later use by the main pipeline.
+    -   `upload-tfplan` uploads the generated plan file to the shared Google Cloud Storage bucket used by the main pipeline.
+-   Plan output can be surfaced in PR comments or logs, ensuring every merge is preceded by state/policy verification.
 
 ### Cloud Build (main)
 
@@ -172,34 +142,27 @@ The cloudbuild.yaml file is used for continuous integration between the reposito
     - `cleanup-tfplan` removes the used plan file from the Google Cloud Storage bucket.
 4. Logs land in Cloud Logging for audit and troubleshooting, and Terraform state operations reuse the manually provisioned GCS backend so local runs and CI share locking.
 
-### Cloud Build (PR)
+### Rollback & Test Scenario
 
-The cloudbuild-pr.yaml file defines the Pull Request validation pipeline.
-This pipeline performs non-destructive checks: formatting, validation, and planning.
-Thanks to that the infrastructure changes are correct and can be reviewed before being merged into the main branch.
+Rollback always happens through the automated Cloud Build triggers, so pushing a revert or opening a rollback PR is all it takes—pipelines pick up the change, regenerate the plan, and apply it without manual intervention.
 
--   It enables a lightweight pipeline. The trigger also runs as the custom Build service account so it can reuse the shared state bucket without additional credentials.
-    -   `terraform-init` initializes providers and connects to the remote Google Cloud Storage state backend so that PR validation uses the exact same state as the main deployment pipeline.
-    -   `terraform-validate` verifies that the Terraform configuration is correct before generating a plan.
-    -   `terraform-plan` generates an execution plan that shows exactly what Terraform would change. The plan file (`default.tfplan`) is then uploaded to Google Cloud Storage for later use by the main pipeline.
-    -   `upload-tfplan` uploads the generated plan file to the shared Google Cloud Storage bucket used by the main pipeline.
--   Plan output can be surfaced in PR comments or logs, ensuring every merge is preceded by state/policy verification.
-
-## Monitoring & Observability
-
--   **Ops Agent** supplies system metrics and forwards Nginx logs to Cloud Logging.
--   **Alerts** remain tied to `instance_id`, so recreation in another zone still keeps monitoring aligned (as long as ID stays consistent).
--   **Notification channels** are currently email but the module is ready for Slack/webhook/SMS by adding more `google_monitoring_notification_channel` resources.
+-   **Flow**:
+    1. Revert or cherry-pick the desired commit into a dedicated rollback branch and open a PR (direct pushes to `main` should be blocked).
+    2. The PR trigger (`cloudbuild-pr.yaml`) runs automatically, producing a deterministic `tfplan` stored in `gs://levelup-group4-terraform-state/plans/default.tfplan`.
+    3. Once the PR is approved and merged into `main`, the main trigger (`cloudbuild.yaml`) fires, downloads that plan, and executes `terraform apply`, which reconciles only the drift.
+    4. Monitor the Cloud Build logs, Terraform outputs, and quick alert/VM checks to confirm the environment matches the expected revision.
+-   **Determinism**: shared GCS state makes every rollback predictable—no bespoke scripts needed.
 
 ## Cost & Time
 
--   Monthly costs:
-    -   `e2-small` ≈ $15 (region-dependent).
-    -   Cloud NAT + logging = a few dollars.
-    -   Cloud Build runtime usually stays within free tier (seconds per pipeline).
+-   Monthly costs (≈ **$17.55** total):
+    -   Compute Engine `e2-small` (cores + RAM) ≈ $12.23.
+    -   Cloud NAT (uptime + 10 GiB data + 1 public IP) ≈ $5.12.
+    -   Logging retention 10 GB ≈ $0.10; state bucket 10 GB ≈ $0.10; other logging/monitoring/storage usage stays in the free tier.
+    -   Cloud Build runtime usually sits in the free tier.
 -   Time to deploy:
     -   `terraform apply` ≈ 2–3 minutes.
     -   CI pipeline (plan + apply) ≈ 5 minutes.
     -   Rollback/destroy ≈ 1–2 minutes.
 
-The current scope is considered complete and no further enhancements are planned at this time.
+[Cost estimation using Pricing Calculator](https://cloud.google.com/products/calculator?hl=en&dl=CjhDaVE0TnpJMVpqRTFOUzFoTWpVekxUUTNPV1F0T1RaaU15MWlZbUU0WW1FM09UY3hOamtRQVE9PRAOGiRCMjE2NTE3My02MTIzLTQxNDEtODZERi0wRjAzMjRGMzRGOEU)
