@@ -1,9 +1,9 @@
 output "vm_service_account_email" {
-  description = ""
+  description = "name of VM service account"
   value       = google_service_account.vm_sa.email
 }
 
 output "monitoring_service_account_email" {
-  description = ""
+  description = "name of Monitoring service account"
   value       = google_service_account.monitoring_sa.email
 }
