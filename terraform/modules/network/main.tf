@@ -2,7 +2,7 @@
 resource "google_compute_network" "vpc" {
   name                    = var.vpc_name
   auto_create_subnetworks = false
-  description             = ""
+  description             = "name of network"
 }
 
 
@@ -11,7 +11,7 @@ resource "google_compute_subnetwork" "subnet" {
   ip_cidr_range = var.cidr_block
   region        = var.region
   network       = google_compute_network.vpc.id
-  description   = ""
+  description   = "name of subnetwork"
 
   private_ip_google_access = true
 
@@ -69,7 +69,7 @@ resource "google_compute_router" "router" {
   name        = "${var.vpc_name}-router"
   region      = var.region
   network     = google_compute_network.vpc.name
-  description = ""
+  description = "name of Compute router"
 }
 
 resource "google_compute_router_nat" "nat" {
