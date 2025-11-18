@@ -1,5 +1,5 @@
 output "vm_internal_ip" {
-  description = ""
+  description = "Name of the internal IP"
   value       = google_compute_instance.vm.network_interface[0].network_ip
 }
 
