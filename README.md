@@ -55,7 +55,7 @@ Terraform backend (gs://levelup-group4-terraform-state/dev)
 ```
 
 <p align="center">
-  <img src="Diagram.jpg" width="70%">
+  <img src="./assets/Diagram.jpg" width="70%">
 </p>
 
 > **Note:** This diagram shows the high-level architecture, not the actual creation order of Terraform modules. Terraform automatically determines the sequence based on resource dependencies. The diagram focuses on illustrating logical relationships rather than the dependency graph used during plan/apply.
