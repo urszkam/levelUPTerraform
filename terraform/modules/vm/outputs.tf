@@ -1,5 +1,5 @@
 output "vm_internal_ip" {
-  description = "Name of the internal IP"
+  description = "Internal IP address of the VM"
   value       = google_compute_instance.vm.network_interface[0].network_ip
 }
 
@@ -9,7 +9,7 @@ output "instance_name" {
 }
 
 output "instance_id" {
-  description = "ID of the VM instance (Monitoring używa tego w metrykach)"
+  description = "ID of the VM instance"
   value       = google_compute_instance.vm.id
 }
 
