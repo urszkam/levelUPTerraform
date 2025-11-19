@@ -1,19 +1,19 @@
 variable "project_id" {
-  description = "name of project"
+  description = "GCP project id"
   type        = string
 }
 
 variable "env" {
-  description = "name of env"
+  description = "Environment name"
   type        = string
 }
 
 variable "instance_id" {
-  description = "name of instance"
+  description = "VM instamce ID"
   type        = string
 }
 
 variable "notification_email" {
-  description = "name of notification"
+  description = "Email address used for sending notifications"
   type        = string
 }
