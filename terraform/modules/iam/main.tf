@@ -1,11 +1,11 @@
 resource "google_service_account" "vm_sa" {
   account_id   = var.vm_sa_name
-  display_name = ""
+  display_name = "VM Service Account"
 }
 
 resource "google_service_account" "monitoring_sa" {
   account_id   = var.monitoring_sa_name
-  display_name = ""
+  display_name = "Monitoring Service Account"
 }
 
 # Roles
