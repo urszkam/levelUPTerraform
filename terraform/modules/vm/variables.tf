@@ -1,10 +1,10 @@
 variable "project_id" {
-  description = "Name of the project"
+  description = "GCP Projet id"
   type        = string
 }
 
 variable "region" {
-  description = "Name of the region"
+  description = "GCP region where resources are created"
   type        = string
 }
 
@@ -14,21 +14,21 @@ variable "vm_name" {
 }
 
 variable "machine_type" {
-  description = "Name of the machine type"
+  description = "Machine type to use for the VM instance"
   type        = string
 }
 
 variable "subnet_self_link" {
-  description = "Name of the subnet self link"
+  description = "Self link of the subnet to attach to VM"
   type        = string
 }
 
 variable "service_account_email" {
-  description = "Name of the service acount email"
+  description = "Email address of the service account assigned to the VM"
   type        = string
 }
 
 variable "env" {
-  description = "name of the env"
+  description = "Environment name"
   type        = string
 }
