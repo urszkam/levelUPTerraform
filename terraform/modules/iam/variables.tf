@@ -1,14 +1,14 @@
  variable "project_id" {
-  description = "name of project"
+  description = "GCP project id"
   type        = string
 }
 
 variable "vm_sa_name" {
-  description = "name of VM service account"
+  description = "Mame of VM service account"
   type        = string
 }
 
 variable "monitoring_sa_name" {
-  description = "name of Monitoring service account"
+  description = "Name of Monitoring service account"
   type        = string
 }
