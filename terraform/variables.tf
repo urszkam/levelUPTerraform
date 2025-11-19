@@ -1,29 +1,29 @@
 variable "project_id" {
-  description = ""
+  description = "GCP Project ID"
   type        = string
 }
 
 variable "project_name" {
-  description = ""
+  description = "Common project prefix for service names"
   type        = string
 }
 
 variable "region" {
-  description = ""
+  description = "The GCP region where the resources are created"
   type        = string
 }
 
 variable "env" {
-  description = ""
+  description = "Name of the environment (e.g., dev)"
   type        = string
 }
 
 variable "cidr_block" {
-  description = ""
+  description = "CIDR block used for network resources"
   type        = string
 }
 
 variable "notification_email" {
-  description = ""
+  description = "Email address used for sending notifications"
   type        = string
 }
