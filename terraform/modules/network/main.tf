@@ -2,7 +2,7 @@
 resource "google_compute_network" "vpc" {
   name                    = var.vpc_name
   auto_create_subnetworks = false
-  description             = "name of network"
+  description             = "VPC network"
 }
 
 
@@ -11,7 +11,7 @@ resource "google_compute_subnetwork" "subnet" {
   ip_cidr_range = var.cidr_block
   region        = var.region
   network       = google_compute_network.vpc.id
-  description   = "name of subnetwork"
+  description   = "Subnet associated with the VPC network"
 
   private_ip_google_access = true
 
@@ -23,8 +23,9 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 resource "google_compute_firewall" "allow-internal" {
-  name    = "${var.vpc_name}-allow-internal"
-  network = google_compute_network.vpc.name
+  name         = "${var.vpc_name}-allow-internal"
+  network      = google_compute_network.vpc.name
+  description  = "Firewall rule allowing internal traffic within the VPC"
 
   allow {
     protocol = "tcp"
@@ -37,7 +38,6 @@ resource "google_compute_firewall" "allow-internal" {
   }
 
   source_ranges = [var.cidr_block]
-  description   = "name of source ranges"
 
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
@@ -45,8 +45,9 @@ resource "google_compute_firewall" "allow-internal" {
 }
 
 resource "google_compute_firewall" "allow-ssh-icmp" {
-  name    = "${var.vpc_name}-allow-ssh-icmp"
-  network = google_compute_network.vpc.name
+  name         = "${var.vpc_name}-allow-ssh-icmp"
+  network      = google_compute_network.vpc.name
+  description  = "Firewall rule allowing ssh and icmp within the VPC"
 
   allow {
     protocol = "icmp"
@@ -58,7 +59,6 @@ resource "google_compute_firewall" "allow-ssh-icmp" {
   }
 
   source_ranges = ["0.0.0.0/0"]
-  description   = "name of source ranges"
 
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
@@ -69,7 +69,7 @@ resource "google_compute_router" "router" {
   name        = "${var.vpc_name}-router"
   region      = var.region
   network     = google_compute_network.vpc.name
-  description = "name of Compute router"
+  description = "Cloud router for managing dynamic routes"
 }
 
 resource "google_compute_router_nat" "nat" {
