@@ -54,7 +54,11 @@ Terraform backend (gs://levelup-group4-terraform-state/dev)
    └─ module.monitoring → email channel + CPU/disk alert policies referencing VM
 ```
 
-(Optional) DIAGRAM INFRASTRUKTURY
+<p align="center">
+  <img src="Diagram.jpg" width="70%">
+</p>
+
+> **Note:** This diagram shows the high-level architecture, not the actual creation order of Terraform modules. Terraform automatically determines the sequence based on resource dependencies. The diagram focuses on illustrating logical relationships rather than the dependency graph used during plan/apply.
 
 ### Module Details
 
@@ -63,7 +67,7 @@ Terraform backend (gs://levelup-group4-terraform-state/dev)
 | `modules/network`       | `google_compute_network`, subnetwork, two firewalls, router + NAT | VPC `10.0.0.0/28` with Private Google Access, flow/firewall logging, SSH/ICMP admin rule, Cloud Router + NAT (errors-only logging)          |
 | `modules/iam`           | 2× `google_service_account`, `google_project_iam_member` bindings | Workload SA with `roles/logging.logWriter` + `roles/monitoring.metricWriter`, monitoring SA with viewer roles; both exported as outputs     |
 | `modules/vm`            | `google_compute_instance`, startup template                       | Debian 12 `e2-small`, OS Login/OS Config metadata, attaches workload SA, startup template installs Nginx + Ops Agent and stamps labels/tags |
-| `modules/monitoring` 📟 | notification channel + two alert policies                         | Email channel (`ursz.kam@gmail.com`), CPU>80 % & disk>90 % alerts keyed to VM `instance_id`, markdown docs + severity labels                |
+| `modules/monitoring`    | notification channel + two alert policies                         | Email channel (`ursz.kam@gmail.com`), CPU>80 % & disk>90 % alerts keyed to VM `instance_id`, markdown docs + severity labels                |
 
 ## Delivery Highlights
 
