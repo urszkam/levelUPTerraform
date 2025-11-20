@@ -131,6 +131,10 @@ Thanks to that the infrastructure changes are correct and can be reviewed before
     -   `upload-tfplan` uploads the generated plan file to the shared Google Cloud Storage bucket used by the main pipeline.
 -   Plan output can be surfaced in PR comments or logs, ensuring every merge is preceded by state/policy verification.
 
+![PR](./assets/Pull%20Request.png)
+
+CI gate on PRs: Cloud Build always runs fmt/validate/plan (and uploads the plan), so every change is reviewed against the same plan path. Merges unlock only when that check turns green.
+
 ### Cloud Build (main)
 
 The cloudbuild.yaml file is used for continuous integration between the repository and Cloud Build. It automatically triggers Cloud Build pipelines whenever changes are pushed to the repository. The image hashicorp/terraform:1.13.0 is used.
