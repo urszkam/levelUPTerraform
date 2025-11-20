@@ -157,6 +157,10 @@ Rollback always happens through the automated Cloud Build triggers, so pushing a
     3. Once the PR is approved and merged into `main`, the main trigger (`cloudbuild.yaml`) fires, downloads that plan, and executes `terraform apply`, which reconciles only the drift.
     4. Monitor the Cloud Build logs, Terraform outputs, and quick alert/VM checks to confirm the environment matches the expected revision.
 -   **Determinism**: shared GCS state makes every rollback predictable—no bespoke scripts needed.
+-   **Test scenarios**: 
+    - Scale VM up (machine type + disk size) and rollback to validate recreations and external IP restoration.
+    - Change subnet CIDR (VPC + NAT) and rollback to ensure dependent firewall/router/NAT/VM flow is reversible.
+    - Break CI intentionally (e.g., invalid config) to confirm PR runs fail fast while main stays clean.
 
 ## Cost & Time
 
