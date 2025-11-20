@@ -73,7 +73,7 @@ Terraform backend (gs://levelup-group4-terraform-state/dev)
 
 ### 🌐 Network
 
--   Custom VPC `levelup-dev-vpc` (`10.0.0.0/28`) is created with `auto_create_subnetworks = false`, so every subnet or route is expressed in Terraform rather than inherited from Google’s default network; /28 gives 13 usable addresses, enough for a single VM plus future helpers without wasting IP space.
+-   Custom VPC `levelup-dev-vpc` (`10.0.1.0/27`) is created with `auto_create_subnetworks = false`, so every subnet or route is expressed in Terraform rather than inherited from Google’s default network; /27 gives 29 usable addresses, enough for a few VMs and helpers without wasting IP space.
 -   The single subnet (`levelup-dev-subnet`) lives in `us-central1`, takes advantage of its four zones (for resilience) and lower-cost e2 pricing, turns on Private Google Access, and pushes flow logs with 30% sampling + full metadata—enough for troubleshooting without flooding logs.
 -   Firewall rules: internal TCP/UDP within the CIDR, SSH/ICMP from anywhere for administrators, and HTTP on port 80 (tagged `vm`) so the demo Nginx page is reachable. All rules keep `log_config` enabled so access attempts show up in Cloud Logging.
 -   A Cloud Router + Cloud NAT pair provides outbound internet for the subnet. NAT logging is set to `ERRORS_ONLY`, which proves translations work while keeping log volume (and cost) under control.
