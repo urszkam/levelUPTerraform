@@ -9,11 +9,11 @@ resource "google_compute_instance" "vm" {
   zone         = data.google_compute_zones.available_zones.names[0]
   project      = var.project_id
 
-  # Debian 12 with 20GB root disk
+  # Debian 12 with 30GB root disk
   boot_disk {
     initialize_params {
       image = "projects/debian-cloud/global/images/family/debian-12"
-      size  = 20
+      size  = 30
     }
   }
 
