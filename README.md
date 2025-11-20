@@ -169,9 +169,9 @@ Rollback always happens through the automated Cloud Build triggers, so pushing a
 [Cost estimation using Pricing Calculator](https://cloud.google.com/products/calculator?hl=en&dl=CjhDaVE1WkRnek56STFZUzA1TXprMkxUUTJPV0l0WWpoaE1DMDROelpqTUdFelpUZ3dZVEVRQVE9PRAOGiRCMjE2NTE3My02MTIzLTQxNDEtODZERi0wRjAzMjRGMzRGOEU)
 
 -   Time to deploy:
-    -   PR pipeline (`cloudbuild-pr.yaml`): `fmt`/`validate` plus plan typically finish in under 30 seconds, regardless of how many resources change; the plan upload takes only a few seconds and is negligible.
-    -   Main pipeline (`cloudbuild.yaml`): apply usually lands between 1–3 minutes depending on how much is changing; downloading the plan adds only a few seconds.
--   Manual runs: `terraform apply` and quick verification locally take ~1–3 minutes; rollback/destroy is typically ~1–2 minutes.
+    -   PR pipeline (`cloudbuild-pr.yaml`): `fmt`/`validate` plus plan typically finish in under 30 seconds, regardless of how many resources change. The plan upload takes only a few seconds and is negligible.
+    -   Main pipeline (`cloudbuild.yaml`): apply usually lands between 1–3 minutes depending on how much is changing. Downloading the plan adds only a few seconds.
+-   Manual runs: `terraform apply` and quick verification locally take ~1–3 minutes. Rollback/destroy is typically ~1–2 minutes.
 
 
 ## Planned Improvements
