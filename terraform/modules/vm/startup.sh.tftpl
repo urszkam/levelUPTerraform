@@ -1,13 +1,14 @@
 #!/bin/bash
 set -xe
 
+# Export basic runtime context
 echo "ENV=${env}" > /etc/profile.d/env.sh
 chmod +x /etc/profile.d/env.sh
 
-# update
+# Update packages
 apt-get update -y
 
-# install nginx
+# Install nginx and serve a simple page
 apt-get install -y nginx
 
 cat > /var/www/html/index.html <<EOF
@@ -17,17 +18,17 @@ cat > /var/www/html/index.html <<EOF
     <title>LevelUp VM</title>
   </head>
   <body>
-    <h1>VM działa 🎉</h1>
     <p>Environment: <strong>${env}</strong></p>
     <p>Project: <strong>${project_id}</strong></p>
-    <p>Serwowane z Nginx na Debian 12.</p>
   </body>
 </html>
 EOF
 
+# Enable and start nginx
 systemctl enable nginx
 systemctl restart nginx
 
+# Install and restart Ops Agent
 curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
 bash add-google-cloud-ops-agent-repo.sh --also-install
 

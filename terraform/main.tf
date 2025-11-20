@@ -14,6 +14,7 @@ provider "google" {
   region  = var.region
 }
 
+# Modules
 module "network" {
   source = "./modules/network"
 

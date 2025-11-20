@@ -1,3 +1,4 @@
+# Basic email alerts for the VM
 resource "google_monitoring_notification_channel" "email" {
   project      = var.project_id
   display_name = "Email alerts ${var.env}"
@@ -8,6 +9,7 @@ resource "google_monitoring_notification_channel" "email" {
   }
 }
 
+# CPU alert when average is above 80% for 5m
 resource "google_monitoring_alert_policy" "cpu_high" {
   project      = var.project_id
   display_name = "VM CPU high (${var.env})"
@@ -23,8 +25,8 @@ resource "google_monitoring_alert_policy" "cpu_high" {
 
     condition_threshold {
       comparison      = "COMPARISON_GT"
-      threshold_value = 0.8    # 80%
-      duration        = "300s" # 5 minut
+      threshold_value = 0.8
+      duration        = "300s"
 
       filter = <<-EOT
         resource.type = "gce_instance"
@@ -52,6 +54,7 @@ resource "google_monitoring_alert_policy" "cpu_high" {
   }
 }
 
+# Disk usage alert when above 90% for 5m
 resource "google_monitoring_alert_policy" "disk_high" {
   project      = var.project_id
   display_name = "VM disk usage high (${var.env})"
@@ -67,7 +70,7 @@ resource "google_monitoring_alert_policy" "disk_high" {
 
     condition_threshold {
       comparison      = "COMPARISON_GT"
-      threshold_value = 90 # percent_used
+      threshold_value = 90
       duration        = "300s"
 
       filter = <<-EOT
