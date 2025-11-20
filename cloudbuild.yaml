@@ -1,4 +1,5 @@
 steps:
+    # Terraform files formatting
     - name: hashicorp/terraform:1.13.0
       id: terraform-fmt
       entrypoint: sh
@@ -8,6 +9,7 @@ steps:
               terraform fmt -recursive | tee /workspace/terraform-fmt.log
       dir: "terraform"
 
+    # Terraform initialization
     - name: hashicorp/terraform:1.13.0
       id: "terraform-init"
       entrypoint: sh
@@ -18,6 +20,7 @@ steps:
               | tee /workspace/terraform-init.log
       dir: "terraform"
 
+    # Terraform configuration validation
     - name: hashicorp/terraform:1.13.0
       id: terraform-validate
       entrypoint: sh
@@ -27,6 +30,7 @@ steps:
               terraform validate | tee /workspace/terraform-validate.log
       dir: "terraform"
 
+    # Download pre-generated Terraform plan from GCS
     - name: gcr.io/cloud-builders/gsutil
       id: "download-tfplan"
       entrypoint: bash
@@ -35,6 +39,7 @@ steps:
           - |
               gsutil cp gs://levelup-group4-terraform-state/plans/default.tfplan terraform/tfplan
 
+    # Apply the Terraform plan automatically
     - name: hashicorp/terraform:1.13.0
       id: "terraform-apply"
       entrypoint: sh
@@ -45,6 +50,7 @@ steps:
               | tee /workspace/terraform-apply.log
       dir: "terraform"
 
+    # Cleanup Terraform plan from GCS
     - name: gcr.io/cloud-builders/gsutil
       id: "cleanup-tfplan"
       entrypoint: bash
@@ -54,4 +60,5 @@ steps:
               gsutil rm -f gs://levelup-group4-terraform-state/plans/default.tfplan
 
 options:
+# Log to Cloud Logging
   logging: CLOUD_LOGGING_ONLY
