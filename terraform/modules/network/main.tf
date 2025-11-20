@@ -44,6 +44,10 @@ resource "google_compute_firewall" "allow-internal" {
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
   }
+
+  lifecycle {
+    replace_triggered_by = [google_compute_network.vpc]
+  }
 }
 
 # Allow SSH and ICMP from the internet
@@ -66,6 +70,10 @@ resource "google_compute_firewall" "allow-ssh-icmp" {
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
   }
+
+  lifecycle {
+    replace_triggered_by = [google_compute_network.vpc]
+  }
 }
 
 # Allow HTTP to reach the VM web page
@@ -85,6 +93,10 @@ resource "google_compute_firewall" "allow-http" {
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
   }
+
+  lifecycle {
+    replace_triggered_by = [google_compute_network.vpc]
+  }
 }
 
 # Cloud Router as base for NAT
@@ -93,6 +105,10 @@ resource "google_compute_router" "router" {
   region      = var.region
   network     = google_compute_network.vpc.name
   description = "Cloud router for managing dynamic routes"
+
+  lifecycle {
+    replace_triggered_by = [google_compute_network.vpc]
+  }
 }
 
 # NAT gives internet egress without public IPs on VMs
@@ -106,5 +122,9 @@ resource "google_compute_router_nat" "nat" {
   log_config {
     enable = true
     filter = "ERRORS_ONLY"
+  }
+
+  lifecycle {
+    replace_triggered_by = [google_compute_network.vpc]
   }
 }
