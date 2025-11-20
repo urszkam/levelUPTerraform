@@ -1,3 +1,4 @@
+# Service accounts for the VM and monitoring
 resource "google_service_account" "vm_sa" {
   account_id   = var.vm_sa_name
   display_name = "VM Service Account"
@@ -8,7 +9,7 @@ resource "google_service_account" "monitoring_sa" {
   display_name = "Monitoring Service Account"
 }
 
-# Roles
+# Minimal roles so VM/monitoring can push logs and metrics
 resource "google_project_iam_member" "vm_log_writer" {
   project = var.project_id
   role    = "roles/logging.logWriter"

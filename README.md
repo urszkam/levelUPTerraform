@@ -55,7 +55,7 @@ Terraform backend (gs://levelup-group4-terraform-state/dev)
 ```
 
 <p align="center">
-  <img src="Diagram.jpg" width="70%">
+  <img src="./assets/Diagram.jpg" width="70%">
 </p>
 
 > **Note:** This diagram shows the high-level architecture, not the actual creation order of Terraform modules. Terraform automatically determines the sequence based on resource dependencies. The diagram focuses on illustrating logical relationships rather than the dependency graph used during plan/apply.
@@ -75,7 +75,7 @@ Terraform backend (gs://levelup-group4-terraform-state/dev)
 
 -   Custom VPC `levelup-dev-vpc` (`10.0.0.0/28`) is created with `auto_create_subnetworks = false`, so every subnet or route is expressed in Terraform rather than inherited from Google’s default network; /28 gives 13 usable addresses, enough for a single VM plus future helpers without wasting IP space.
 -   The single subnet (`levelup-dev-subnet`) lives in `us-central1`, takes advantage of its four zones (for resilience) and lower-cost e2 pricing, turns on Private Google Access, and pushes flow logs with 30% sampling + full metadata—enough for troubleshooting without flooding logs.
--   Firewall rules are limited to two cases: internal TCP/UDP within the CIDR and SSH/ICMP from anywhere for administrators. Both rules keep `log_config` enabled so access attempts show up in Cloud Logging.
+-   Firewall rules: internal TCP/UDP within the CIDR, SSH/ICMP from anywhere for administrators, and HTTP on port 80 (tagged `vm`) so the demo Nginx page is reachable. All rules keep `log_config` enabled so access attempts show up in Cloud Logging.
 -   A Cloud Router + Cloud NAT pair provides outbound internet for the subnet. NAT logging is set to `ERRORS_ONLY`, which proves translations work while keeping log volume (and cost) under control.
 
 ### 🖥️ Compute
@@ -167,6 +167,12 @@ Rollback always happens through the automated Cloud Build triggers, so pushing a
 -   Time to deploy:
     -   PR pipeline (`cloudbuild-pr.yaml`) runs in ~1m01s end-to-end (init 7 s, validate 1 s, plan 3 s, upload plan 42 s).
     -   Main pipeline (`cloudbuild.yaml`) clocks ~1m05s (fmt 5 s, init 3 s, validate 1 s, download plan 44 s, apply 1 s, cleanup 3 s). Upload/download takes the bulk of the runtime but gives us deterministic rollback and auditability—only the reviewed plan can be applied, and it’s traceable in GCS.
-    -   Manual `terraform apply` remains ~2–3 minutes if run locally; rollback/destroy takes ~1–2 minutes.
+-   Manual `terraform apply` remains ~2–3 minutes if run locally; rollback/destroy takes ~1–2 minutes.
 
 [Cost estimation using Pricing Calculator](https://cloud.google.com/products/calculator?hl=en&dl=CjhDaVE0TnpJMVpqRTFOUzFoTWpVekxUUTNPV1F0T1RaaU15MWlZbUU0WW1FM09UY3hOamtRQVE9PRAOGiRCMjE2NTE3My02MTIzLTQxNDEtODZERi0wRjAzMjRGMzRGOEU)
+
+## Planned Improvements
+
+-   Add more environments (e.g., `stage`, `prod`) and migrate through them gradually as we validate the stack, keeping per-env state and isolated pipelines.
+-   Tighten GitHub branch protections so merges require passing Cloud Build checks and prevent concurrent merges that could race on stored plans.
+-   Improve plan versioning/retention in GCS to avoid overwriting reviewed plans and make rollback/apply flows more deterministic.

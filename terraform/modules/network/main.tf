@@ -1,4 +1,4 @@
-
+# Simple VPC with one subnet and outbound NAT
 resource "google_compute_network" "vpc" {
   name                    = var.vpc_name
   auto_create_subnetworks = false
@@ -6,6 +6,7 @@ resource "google_compute_network" "vpc" {
 }
 
 
+# Subnet with flow logs enabled
 resource "google_compute_subnetwork" "subnet" {
   name          = var.subnet_name
   ip_cidr_range = var.cidr_block
@@ -22,6 +23,7 @@ resource "google_compute_subnetwork" "subnet" {
   }
 }
 
+# Basic firewall rules for the VPC
 resource "google_compute_firewall" "allow-internal" {
   name         = "${var.vpc_name}-allow-internal"
   network      = google_compute_network.vpc.name
@@ -44,6 +46,7 @@ resource "google_compute_firewall" "allow-internal" {
   }
 }
 
+# Allow SSH and ICMP from the internet
 resource "google_compute_firewall" "allow-ssh-icmp" {
   name         = "${var.vpc_name}-allow-ssh-icmp"
   network      = google_compute_network.vpc.name
@@ -65,6 +68,26 @@ resource "google_compute_firewall" "allow-ssh-icmp" {
   }
 }
 
+# Allow HTTP to reach the VM web page
+resource "google_compute_firewall" "allow-http" {
+  name        = "${var.vpc_name}-allow-http"
+  network     = google_compute_network.vpc.name
+  description = "Firewall rule allowing http to the VPC"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80"]
+  }
+
+  target_tags   = ["vm"]
+  source_ranges = ["0.0.0.0/0"]
+
+  log_config {
+    metadata = "INCLUDE_ALL_METADATA"
+  }
+}
+
+# Cloud Router as base for NAT
 resource "google_compute_router" "router" {
   name        = "${var.vpc_name}-router"
   region      = var.region
@@ -72,6 +95,7 @@ resource "google_compute_router" "router" {
   description = "Cloud router for managing dynamic routes"
 }
 
+# NAT gives internet egress without public IPs on VMs
 resource "google_compute_router_nat" "nat" {
   name                               = "${var.vpc_name}-nat"
   router                             = google_compute_router.router.name
