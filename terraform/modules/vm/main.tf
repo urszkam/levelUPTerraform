@@ -19,6 +19,9 @@ resource "google_compute_instance" "vm" {
 
   network_interface {
     subnetwork = var.subnet_self_link
+
+    # Ephemeral external IP to reach the demo page
+    access_config {}
   }
 
   service_account {
