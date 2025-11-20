@@ -3,6 +3,10 @@ resource "google_compute_network" "vpc" {
   name                    = var.vpc_name
   auto_create_subnetworks = false
   description             = "VPC network"
+
+  lifecycle {
+    ignore_changes = [description]
+  }
 }
 
 
@@ -15,6 +19,10 @@ resource "google_compute_subnetwork" "subnet" {
   description   = "Subnet associated with the VPC network"
 
   private_ip_google_access = true
+
+  lifecycle {
+    ignore_changes = [description]
+  }
 
   log_config {
     aggregation_interval = "INTERVAL_1_MIN"
