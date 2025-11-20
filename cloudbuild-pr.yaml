@@ -1,4 +1,5 @@
 steps:
+    # Terraform initialization
     - name: hashicorp/terraform:1.13.0
       id: "terraform-init"
       entrypoint: sh
@@ -9,6 +10,7 @@ steps:
               | tee /workspace/terraform-init.log
       dir: "terraform"
 
+    # Terraform configuration validation
     - name: hashicorp/terraform:1.13.0
       id: terraform-validate
       entrypoint: sh
@@ -18,6 +20,7 @@ steps:
               terraform validate | tee /workspace/terraform-validate.log
       dir: "terraform"
 
+     # Generate Terraform plan using dev.tfvars
     - name: hashicorp/terraform:1.13.0
       id: "terraform-plan"
       entrypoint: sh
@@ -30,6 +33,7 @@ steps:
                 -input=false | tee /workspace/terraform-plan.log
       dir: "terraform"
 
+    # Upload Terraform plan to GCS
     - name: gcr.io/cloud-builders/gsutil
       id: "upload-tfplan"
       entrypoint: bash
@@ -40,4 +44,5 @@ steps:
       dir: "terraform"
 
 options:
+    # Log to Cloud Logging
     logging: CLOUD_LOGGING_ONLY
