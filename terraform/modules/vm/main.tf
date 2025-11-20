@@ -1,4 +1,4 @@
-# Single Debian VM for simple tests
+# Single Debian VM
 data "google_compute_zones" "available_zones" {
   region = var.region
 }

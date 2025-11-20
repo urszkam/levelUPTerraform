@@ -1,4 +1,3 @@
-
 # Simple VPC with one subnet and outbound NAT
 resource "google_compute_network" "vpc" {
   name                    = var.vpc_name
@@ -69,17 +68,18 @@ resource "google_compute_firewall" "allow-ssh-icmp" {
   }
 }
 
-# Allow HTTP/HTTPS to reach the VM web page
+# Allow HTTP to reach the VM web page
 resource "google_compute_firewall" "allow-http" {
   name        = "${var.vpc_name}-allow-http"
   network     = google_compute_network.vpc.name
-  description = "Firewall rule allowing http and https to the VPC"
+  description = "Firewall rule allowing http to the VPC"
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443"]
+    ports    = ["80"]
   }
 
+  target_tags   = ["vm"]
   source_ranges = ["0.0.0.0/0"]
 
   log_config {
