@@ -169,9 +169,9 @@ Rollback always happens through the automated Cloud Build triggers, so pushing a
 [Cost estimation using Pricing Calculator](https://cloud.google.com/products/calculator?hl=en&dl=CjhDaVE1WkRnek56STFZUzA1TXprMkxUUTJPV0l0WWpoaE1DMDROelpqTUdFelpUZ3dZVEVRQVE9PRAOGiRCMjE2NTE3My02MTIzLTQxNDEtODZERi0wRjAzMjRGMzRGOEU)
 
 -   Time to deploy:
-    -   PR pipeline (`cloudbuild-pr.yaml`) runs in ~1m01s end-to-end (init 7 s, validate 1 s, plan 3 s, upload plan 42 s).
-    -   Main pipeline (`cloudbuild.yaml`) clocks ~1m05s (fmt 5 s, init 3 s, validate 1 s, download plan 44 s, apply 1 s, cleanup 3 s). Upload/download takes the bulk of the runtime but gives us deterministic rollback and auditability—only the reviewed plan can be applied, and it’s traceable in GCS.
--   Manual `terraform apply` remains ~2–3 minutes if run locally; rollback/destroy takes ~1–2 minutes.
+    -   PR pipeline (`cloudbuild-pr.yaml`): plan zwykle poniżej 30 s niezależnie od liczby zmian; upload planu trwa kilka sekund i jest pomijalny.
+    -   Main pipeline (`cloudbuild.yaml`): apply 1–3 min w zależności od zakresu zmian; download planu to tylko kilka sekund.
+-   Manual `terraform apply` i weryfikacja lokalnie: ~1–3 min; rollback/destroy zwykle ~1–2 min.
 
 
 ## Planned Improvements
