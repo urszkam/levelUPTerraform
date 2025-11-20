@@ -164,12 +164,14 @@ Rollback always happens through the automated Cloud Build triggers, so pushing a
     -   Cloud NAT (uptime + 10 GiB data + 1 public IP) ≈ $5.12.
     -   Logging retention 10 GB ≈ $0.10; state bucket 10 GB ≈ $0.10; other logging/monitoring/storage usage stays in the free tier.
     -   Cloud Build runtime usually sits in the free tier.
+
+[Cost estimation using Pricing Calculator](https://cloud.google.com/products/calculator?hl=en&dl=CjhDaVE1WkRnek56STFZUzA1TXprMkxUUTJPV0l0WWpoaE1DMDROelpqTUdFelpUZ3dZVEVRQVE9PRAOGiRCMjE2NTE3My02MTIzLTQxNDEtODZERi0wRjAzMjRGMzRGOEU)
+
 -   Time to deploy:
     -   PR pipeline (`cloudbuild-pr.yaml`) runs in ~1m01s end-to-end (init 7 s, validate 1 s, plan 3 s, upload plan 42 s).
     -   Main pipeline (`cloudbuild.yaml`) clocks ~1m05s (fmt 5 s, init 3 s, validate 1 s, download plan 44 s, apply 1 s, cleanup 3 s). Upload/download takes the bulk of the runtime but gives us deterministic rollback and auditability—only the reviewed plan can be applied, and it’s traceable in GCS.
 -   Manual `terraform apply` remains ~2–3 minutes if run locally; rollback/destroy takes ~1–2 minutes.
 
-[Cost estimation using Pricing Calculator](https://cloud.google.com/products/calculator?hl=en&dl=CjhDaVE0TnpJMVpqRTFOUzFoTWpVekxUUTNPV1F0T1RaaU15MWlZbUU0WW1FM09UY3hOamtRQVE9PRAOGiRCMjE2NTE3My02MTIzLTQxNDEtODZERi0wRjAzMjRGMzRGOEU)
 
 ## Planned Improvements
 
