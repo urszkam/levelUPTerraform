@@ -38,7 +38,7 @@ module "vm" {
   project_id            = var.project_id
   region                = var.region
   vm_name               = "${var.project_name}-${var.env}-vm"
-  machine_type          = "e2-medium"
+  machine_type          = "e2-small"
   subnet_self_link      = module.network.subnet_self_link
   service_account_email = module.iam.vm_service_account_email
   env                   = var.env
